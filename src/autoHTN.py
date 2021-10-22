@@ -44,7 +44,8 @@ def make_operator (rule):
                 state[s_requires][ID] -= i_requires
             
             state[s_produces][ID] += i_produces
-            
+            return state
+        return False
     return operator
 
 def declare_operators (data):
