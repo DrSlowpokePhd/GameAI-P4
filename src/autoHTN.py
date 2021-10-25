@@ -30,9 +30,8 @@ def make_method (name, rule):
                     return False
 
         if 'Time' in rule:
-            for timeAmount in rule['Time']:
-                if not state[timeAmount] >= rule['Time'][timeAmount]:
-                    return False
+            if not state.time[ID] >= rule['Time']:
+                return False
         return True
         # your code here
     method.__name__ = name
@@ -62,7 +61,8 @@ def declare_methods (data):
     
     for i in method_table:
         name = 'produce_' + i 
-        pyhop.declare_methods(name, method_table[i])
+        for j in method_table[i]:
+            pyhop.declare_methods(name, j[0])
     
 def make_operator (rule, name): 
     requires = rule.get('Requires')
