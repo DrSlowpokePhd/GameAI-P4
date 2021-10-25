@@ -18,9 +18,7 @@ pyhop.declare_methods ('produce', produce)
 # name = name of recipe
 # rule = contents of recipe
 def make_method (name, rule):
-    def method (state, ID):
-
-        
+    def method (state, ID):        
         if 'Requires' in rule:
             for require in rule['Requires']:
                 if not state[require]:
@@ -37,8 +35,7 @@ def make_method (name, rule):
                     return False
         return True
         # your code here
-        
-
+    method.__name__ = name
     return method
 
 def declare_methods (data):
@@ -50,8 +47,10 @@ def declare_methods (data):
     recipes = data['Recipes']
     method_table = {}
     for r in recipes:
+        
         name = r.replace(' ', '_')
-        method = make_method(recipes[r], name)
+
+        method = make_method(name, recipes[r])
         r_data = recipes[r]
         produce = list(r_data['Produces'])[0]
         
@@ -62,11 +61,10 @@ def declare_methods (data):
         method_table[produce].sort(key=lambda s : s[1])
     
     for i in method_table:
-        name = 'produce_' + i
-        for j in method_table[i]:
-            pyhop.declare_methods(name, j[0])
+        name = 'produce_' + i 
+        pyhop.declare_methods(name, method_table[i])
     
-def make_operator (rule): 
+def make_operator (rule, name): 
     requires = rule.get('Requires')
     if requires:
         s_requires = requires.keys()
@@ -74,7 +72,7 @@ def make_operator (rule):
     s_produces = rule['Produces'].keys()
     i_produces = rule['Produces'].values()
     time = rule['Time']
-
+    f_name = 'op_' + name
     def operator (state, ID):
         if state.time[ID] >= time:
             state.time[ID] -= time
@@ -84,22 +82,29 @@ def make_operator (rule):
             state[s_produces][ID] += i_produces
             return state
         return False
+    operator.__name__ = f_name
     return operator
 
 def declare_operators (data):
     # your code here
     # hint: call make_operator, then declare the operator to pyhop using pyhop.declare_operators(o1, o2, ..., ok)
     recipes = data['Recipes']
-    for r in recipes: 
-        op = make_operator(recipes[r])
+    r_list = []
+    for r in recipes:
+        name = r.replace(' ', '_')
+        op = make_operator(recipes[r], name)
+        r_list.append(op)
+
+    for op in r_list:
         pyhop.declare_operators(op)
+        
 
 def add_heuristic (data, ID):
     # prune search branch if heuristic() returns True
     # do not change parameters to heuristic(), but can add more heuristic functions with the same parameters: 
     # e.g. def heuristic2(...); pyhop.add_check(heuristic2)
     def heuristic (state, curr_task, tasks, plan, depth, calling_stack):
-        # your code here
+        
         return False # if True, prune this branch
 
     pyhop.add_check(heuristic)
@@ -129,10 +134,11 @@ def set_up_goals (data, ID):
 
 if __name__ == '__main__':
     rules_filename = 'crafting.json'
-
+    
     with open(rules_filename) as f:
         data = json.load(f)
 
+    
     state = set_up_state(data, 'agent', time=239) # allot time here
     goals = set_up_goals(data, 'agent')
 
@@ -140,7 +146,7 @@ if __name__ == '__main__':
     declare_methods(data)
     add_heuristic(data, 'agent')
 
-    # pyhop.print_operators()
+    pyhop.print_operators()
     # pyhop.print_methods()
 
     # Hint: verbose output can take a long time even if the solution is correct; 
