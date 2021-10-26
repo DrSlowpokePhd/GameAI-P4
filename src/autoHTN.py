@@ -19,6 +19,7 @@ pyhop.declare_methods ('produce', produce)
 # rule = contents of recipe
 def make_method (name, rule):
     consumes = rule.get('Consumes')
+    f_name = 'op_' + name
     def method (state, ID):        
         methods = []        	
         if ('Requires' in rule):
@@ -28,8 +29,8 @@ def make_method (name, rule):
             for consumes in rule['Consumes']:
                 methods += [('have_enough', ID, consumes, rule['Consumes'][consumes])]
             
-        methods += [(name, ID)]
-        #print(methods)
+        methods += [(f_name, ID)]
+        print(methods)
         return methods
         # your code here
     method.__name__ = name
@@ -62,24 +63,40 @@ def declare_methods (data):
         for j in method_table[i]:
             pyhop.declare_methods(name, j[0])
     
-def make_operator (rule, name): 
-    requires = rule.get('Requires')
+def make_operator (rule, name):
+     
+    """requires = rule.get('Requires')
     if requires:
         s_requires = requires.keys()
         i_requires = requires.values()
     s_produces = rule['Produces'].keys()
-    i_produces = rule['Produces'].values()
+    i_produces = rule['Produces'].values()"""
     time = rule['Time']
     f_name = 'op_' + name
+    f_name = f_name.replace(' ', '_')
+    #print('aer we here')
     def operator (state, ID):
+        print('entering operator')
         if state.time[ID] >= time:
             state.time[ID] -= time
-            if requires:
-                state[s_requires][ID] -= i_requires
+        else:
+            return False
+        if ('Requires' in rule):
+            for requires in rule['Requires']:
+                if getattr(state, requires)[ID] <= rule['Requires'][requires]:
+                    return False
+        
+        if('Consumes' in rule):
+            for consumes in rule['Consumes']:
+                 if getattr(state,consumes)[ID] <= rule['Consumes'][consumes]:
+                     return False
+                 else:
+                    getattr(state, consumes)[ID] -= rule['Consumes'][consumes]
+					 
+        for produce in rule['Produces']:
+                getattr(state, produce)[ID] += rule['Produces'][produce]
             
-            state[s_produces][ID] += i_produces
-            return state
-        return False
+        return state
     operator.__name__ = f_name
     return operator
 
@@ -90,7 +107,7 @@ def declare_operators (data):
     r_list = []
     for r in recipes:
         name = r.replace(' ', '_')
-        op = make_operator(recipes[r], name)
+        op = make_operator(recipes[r], r)
         r_list.append(op)
 
     for op in r_list:
@@ -102,8 +119,15 @@ def add_heuristic (data, ID):
     # do not change parameters to heuristic(), but can add more heuristic functions with the same parameters: 
     # e.g. def heuristic2(...); pyhop.add_check(heuristic2)
     def heuristic (state, curr_task, tasks, plan, depth, calling_stack):
+        print(state.wood[ID])
         
-        return False # if True, prune this branch
+        #if(getattr(state, 'wood')[ID] > 1 or getattr(state, 'plank')[ID] > 7 or getattr(state, 'stick')[ID] > 5 or getattr(state, 'wooden_axe')[ID] > 0 or getattr(state, 'wooden_pickaxe')[ID] > 1 or getattr(state, 'cobble')[ID] > 8 or getattr(state, 'coal')[ID] > 1 or getattr(state, 'stone_axe')[ID] > 0 or getattr(state, 'stone_pickaxe')[ID] > 1 or getattr(state, 'ore')[ID] > 1 or getattr(state, 'furnace')[ID] > 1 or getattr(state, 'ingot')[ID] > 6 or getattr(state, 'iron_axe')[ID] > 0 or getattr(state, 'iron_pickaxe')[ID] > 1):
+            #return False
+
+        if(getattr(state, 'wooden_pickaxe')[ID] == 1):
+            return False
+        
+        #return False # if True, prune this branch
 
     pyhop.add_check(heuristic)
 
@@ -137,18 +161,18 @@ if __name__ == '__main__':
         data = json.load(f)
 
     
-    state = set_up_state(data, 'agent', time=239) # allot time here
+    state = set_up_state(data, 'agent', time=50) # allot time here
     goals = set_up_goals(data, 'agent')
 
     declare_operators(data)
     declare_methods(data)
-    #add_heuristic(data, 'agent')
+    add_heuristic(data, 'agent')
 
     pyhop.print_operators()
-    # pyhop.print_methods()
+    pyhop.print_methods()
 
     # Hint: verbose output can take a long time even if the solution is correct; 
     # try verbose=1 if it is taking too long
     #pyhop.pyhop(state, goals, verbose=3)
-    pyhop.pyhop(state, [('have_enough', 'agent', 'plank', 1)], verbose=3)
+    pyhop.pyhop(state, [('have_enough', 'agent', 'wooden_axe', 1)], verbose=3)
     #pyhop.pyhop(state, [('have_enough', 'agent', 'cart', 1),('have_enough', 'agent', 'rail', 20)], verbose=3)
