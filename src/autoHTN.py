@@ -18,21 +18,19 @@ pyhop.declare_methods ('produce', produce)
 # name = name of recipe
 # rule = contents of recipe
 def make_method (name, rule):
+    consumes = rule.get('Consumes')
     def method (state, ID):        
-        if 'Requires' in rule:
-            for require in rule['Requires']:
-                if not state[require]:
-                    return False
-
-        if 'Consumes' in rule:
-            for consume in rule['Consumes']:
-                if not state[consume] >= rule['Consumes'][consume]:
-                    return False
-
-        if 'Time' in rule:
-            if not state.time[ID] >= rule['Time']:
-                return False
-        return True
+        methods = []        	
+        if ('Requires' in rule):
+            for requires in rule['Requires']:
+                methods += [('have_enough', ID, requires, rule['Requires'][requires])]
+        if('Consumes' in rule):
+            for consumes in rule['Consumes']:
+                methods += [('have_enough', ID, consumes, rule['Consumes'][consumes])]
+            
+        methods += [(name, ID)]
+        #print(methods)
+        return methods
         # your code here
     method.__name__ = name
     return method
@@ -144,13 +142,13 @@ if __name__ == '__main__':
 
     declare_operators(data)
     declare_methods(data)
-    add_heuristic(data, 'agent')
+    #add_heuristic(data, 'agent')
 
     pyhop.print_operators()
     # pyhop.print_methods()
 
     # Hint: verbose output can take a long time even if the solution is correct; 
     # try verbose=1 if it is taking too long
-    pyhop.pyhop(state, goals, verbose=3)
-    # pyhop.pyhop(state, [('have_enough', 'agent', 'cart', 1),('have_enough', 'agent', 'rail', 20)], verbose=3)
-
+    #pyhop.pyhop(state, goals, verbose=3)
+    pyhop.pyhop(state, [('have_enough', 'agent', 'plank', 1)], verbose=3)
+    #pyhop.pyhop(state, [('have_enough', 'agent', 'cart', 1),('have_enough', 'agent', 'rail', 20)], verbose=3)
